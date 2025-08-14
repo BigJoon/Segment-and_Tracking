@@ -2,6 +2,8 @@
 
 **Segment Anything Model (SAM)**과 **Associating Objects with Transformers (AOT)**를 기반으로 한 CLI 기반 비디오 객체 분할 및 추적 도구입니다. 자동 다중 객체 추적과 대화형 선택을 통한 정밀한 단일 객체 추적을 모두 제공합니다.
 
+**This repository was created for the purpose of removing objects from videos.**
+
 ## 기능
 
 ### 🎯 단일 객체 추적

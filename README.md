@@ -4,6 +4,8 @@
 
 **This repository was created for the purpose of removing objects from videos.**
 
+**The key feature here is the video mask generation.**
+
 ## 기능
 
 ### 🎯 단일 객체 추적

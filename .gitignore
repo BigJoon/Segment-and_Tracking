@@ -1,15 +1,68 @@
-.vscode
+# IDE files
+.vscode/
+.idea/
+
+# Model checkpoints (large files)
 ckpt/*
+*.pth
+
+# Asset files (except sample videos)
 assets/*masks
 assets/*mp4
 # assets/*zip
 assets/*gif
+
+# Test outputs and temporary files
+test_output/
+single_track_test/
+single_track_bbox/
+first_frame.jpg
+output*/
+results/
+tracking_results/
+
+# Python cache
+__pycache__/
 *.pyc
-debug
-cym_utils
-/src
-/tracking_results
-/aot/results
-/aot/pretrain_models
-/aot/datasets
-/ast_master 
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Debug and utility folders
+debug/
+cym_utils/
+src/
+
+# Large dependencies and datasets
+GroundingDINO/
+Pytorch-Correlation-extension/build/
+aot/results/
+aot/pretrain_models/
+aot/datasets/
+ast_master/
+
+# Include core aot, sam folders but exclude their .git
+aot/.git/
+sam/.git/
+Pytorch-Correlation-extension/.git/
+
+# Output videos and large files
+*.mp4
+*.avi
+*.mov
+*.gif
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary and log files
+*.log
+*.tmp
+*.temp 

@@ -16,6 +16,7 @@ assets/*gif
 test_output/
 single_track_test/
 single_track_bbox/
+single_track_output/
 first_frame.jpg
 output*/
 results/

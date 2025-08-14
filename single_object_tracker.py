@@ -23,6 +23,58 @@ sys.path.append("./sam")
 from SimpleSegTracker import SimpleSegTracker as SegTracker
 from model_args import aot_args, sam_args, segtracker_args
 
+def get_bounding_box_from_mask(mask):
+    """
+    Get bounding box coordinates from a binary mask
+    
+    Args:
+        mask: numpy array (h,w) with object pixels as 1
+        
+    Returns:
+        bbox: [x1, y1, x2, y2] or None if no object found
+    """
+    # Find all non-zero pixels
+    coords = np.where(mask > 0)
+    
+    if len(coords[0]) == 0:
+        return None
+    
+    # Get bounding box
+    y_min, y_max = np.min(coords[0]), np.max(coords[0])
+    x_min, x_max = np.min(coords[1]), np.max(coords[1])
+    
+    return [x_min, y_min, x_max, y_max]
+
+def create_bbox_mask_from_segmentation(mask, padding=0):
+    """
+    Create a rectangular bounding box mask from segmentation mask
+    
+    Args:
+        mask: numpy array (h,w) with segmented object as 1
+        padding: additional pixels to add around bounding box
+        
+    Returns:
+        bbox_mask: numpy array (h,w) with bounding box area as 1
+    """
+    bbox = get_bounding_box_from_mask(mask)
+    
+    if bbox is None:
+        return mask
+    
+    x1, y1, x2, y2 = bbox
+    
+    # Add padding
+    x1 = max(0, x1 - padding)
+    y1 = max(0, y1 - padding)
+    x2 = min(mask.shape[1], x2 + padding)
+    y2 = min(mask.shape[0], y2 + padding)
+    
+    # Create bounding box mask
+    bbox_mask = np.zeros_like(mask)
+    bbox_mask[y1:y2+1, x1:x2+1] = 1
+    
+    return bbox_mask
+
 def get_first_frame_selection(video_path, selection_type, selection_params):
     """
     Get the first frame and perform object selection
@@ -88,7 +140,7 @@ def get_first_frame_selection(video_path, selection_type, selection_params):
     
     return frame_rgb, binary_mask
 
-def track_single_object(video_path, first_frame, object_mask, output_dir):
+def track_single_object(video_path, first_frame, object_mask, output_dir, use_bbox_mask=False, bbox_padding=0):
     """
     Track the selected object through the entire video
     
@@ -97,6 +149,8 @@ def track_single_object(video_path, first_frame, object_mask, output_dir):
         first_frame: First frame (h,w,3)
         object_mask: Binary mask of selected object (h,w)
         output_dir: Output directory
+        use_bbox_mask: If True, generate bounding box masks instead of segmentation masks
+        bbox_padding: Additional padding around bounding box (in pixels)
     
     Returns:
         mask_list: List of masks for each frame
@@ -153,6 +207,10 @@ def track_single_object(video_path, first_frame, object_mask, output_dir):
                 pred_mask = segtracker.track(frame_rgb, update_memory=True)
                 # Convert to binary (0 or 1)
                 pred_mask = (pred_mask > 0).astype(np.uint8)
+            
+            # Convert to bounding box mask if requested
+            if use_bbox_mask:
+                pred_mask = create_bbox_mask_from_segmentation(pred_mask, bbox_padding)
             
             # Save binary mask as image
             mask_img = (pred_mask * 255).astype(np.uint8)  # Convert to 0-255 range
@@ -277,6 +335,10 @@ def main():
     # Output options
     parser.add_argument("--mask-only", action="store_true", 
                        help="Output only white mask video (no overlay)")
+    parser.add_argument("--bbox-mask", action="store_true",
+                       help="Generate bounding box masks instead of segmentation masks")
+    parser.add_argument("--bbox-padding", type=int, default=0,
+                       help="Additional padding around bounding box in pixels (default: 0)")
     parser.add_argument("--device", default="cuda", help="Device to use (default: cuda)")
     
     args = parser.parse_args()
@@ -312,6 +374,11 @@ def main():
         print(f"Selection: Point {args.point}")
         selection_type = "point"
         selection_params = args.point
+    
+    if args.bbox_mask:
+        print(f"Mask type: Bounding box with {args.bbox_padding}px padding")
+    else:
+        print("Mask type: Segmentation")
         
     print(f"Device: {args.device}")
     print("=" * 60)
@@ -332,8 +399,14 @@ def main():
         
         # Step 2: Track object through video
         print("Step 2: Tracking object through video...")
+        if args.bbox_mask:
+            print(f"Using bounding box masks with {args.bbox_padding}px padding")
+        else:
+            print("Using segmentation masks")
+            
         mask_list, num_frames = track_single_object(
-            args.input_video, first_frame, object_mask, args.output
+            args.input_video, first_frame, object_mask, args.output,
+            use_bbox_mask=args.bbox_mask, bbox_padding=args.bbox_padding
         )
         
         # Step 3: Create output videos
